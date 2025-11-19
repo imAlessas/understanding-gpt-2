@@ -16,6 +16,36 @@ class GPTConfiguration:
     total_heads: int = 6
     total_embeddings: int = 384
 
+
+
+class Block(nn.Module):
+
+    def __init__(self, configuration: GPTConfiguration):
+        super().__init__()
+
+        # Create the two normalization layers
+        self.ln_1 = nn.LayerNorm( configuration.total_embeddings )
+        self.ln_2 = nn.LayerNorm( configuration.total_embeddings )
+
+        # Create the attention layer
+        self.attention = CausalSelfAttention( configuration )
+
+        # Create the Multi-Layer Perceptron, AKA Feed-Forward network
+        self.mlp = MLP( configuration )
+
+    def forward(self, x):
+        # The attention is an aggregation function, a weighted sum function: a reduce function. Meanwhile, MLP happens to avery single token individually: a map function
+        # Basically the transformer is just a replication of map and reduce function. In the attention function the blocks communicate whilst in the feed-forward the individually think
+
+        # First goes to the layer normalization and then the attention (reduce function)
+        x += self.attention( self.ln_1(x) )
+
+        # Then to the second layer normalization and to the feed-forward network (map function)
+        x += self.mlp( self.ln_2(x) )
+        return x
+
+
+
 class GPT(nn.Module):
 
     def __int__(self, configuration: GPTConfiguration):
@@ -36,7 +66,7 @@ class GPT(nn.Module):
                 # Hidden layers
                 h = nn.ModuleList( [Block(configuration) for _ in range(configuration.total_layers)] ),
 
-                # Linear layer
+                # Layer Normalization
                 ln_f = nn.LayerNorm(configuration.total_embeddings)
             )
         )
