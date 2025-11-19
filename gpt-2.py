@@ -18,6 +18,27 @@ class GPTConfiguration:
 
 
 
+class MLP(nn.Module):
+    # MLP Block is defined as two liner projection function and the GELU non-linearity
+
+    def __init__(self, configuration: GPTConfiguration):
+        super().__init__()
+        self.c_fc = nn.Linear( configuration.total_embeddings, 4 * configuration.total_embeddings )
+        self.c_proj = nn.Linear( 4 * configuration.total_embeddings, configuration.total_embeddings )
+
+        # The Gaussian Error Linear Units is essentially a RELU but smoother (there is no point using the approximation except the fact that GPT-2 uses it)
+        # The GELU is better that RELU because when x<0, GELU(x) is not actually 0 always contributing the local gradiant instead of RELU(x) which is always 0 when x<0
+        # Nowadays this function is replaced by other variants like the SWIGLU
+        self.gelu = nn.GELU(approximate="tanh")
+
+    def __format__(self, x):
+        x = self.c_fc(x)
+        x = self.gelu(x)
+        x = self.c_proj(x)
+
+        return x
+
+
 class Block(nn.Module):
 
     def __init__(self, configuration: GPTConfiguration):
